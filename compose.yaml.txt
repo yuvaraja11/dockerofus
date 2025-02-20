@@ -1,0 +1,76 @@
+compose.yaml
+version: "3.8"
+ 
+services:
+  frontend:
+    build: ./vite-project
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./vite-project:/app  
+      - /app/node_modules 
+    networks:
+      - mern
+ 
+  backend:
+    build: ./Backend
+    ports:
+      - "3000:3000"
+    networks:
+      - mern
+    environment:
+      - MONGODB_URL=mongodb://mongo:27017/myogblog-1
+    depends_on:
+      - mongo
+ 
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    networks:
+      - mern
+    volumes:
+      - mongo-data:/data/db
+ 
+networks:
+  mern:
+    driver: bridge
+ 
+volumes:
+  mongo-data:
+    driver: local
+ -----------------------------
+
+dockerfile
+# Step 1: Use an official Node.js runtime as a parent image
+FROM node:18-alpine
+
+# Step 2: Set the working directory in the container
+WORKDIR /app
+
+# Step 3: Copy package.json and package-lock.json into the container (ensure they are copied to /app)
+COPY package*.json /app/
+
+# Step 4: Install dependencies
+RUN npm install
+
+# Step 5: Copy the rest of the application code into the container (ensure it's copied to /app)
+COPY . /app
+
+# Step 6: Expose the port the app will run on (express runs on port 3000)
+EXPOSE 3000
+
+# Step 7: Install nodemon for development (optional for production use)
+RUN npm install -g nodemon
+
+# Step 8: Define the command to run your app
+CMD ["npm", "run", "dev"]
+----
+FROM node:18-alpine
+WORKDIR /app
+COPY package.json /app
+COPY package-lock.json /app
+RUN npm install
+COPY . /app
+EXPOSE 5173
+CMD ["npm", "run", "dev"]
